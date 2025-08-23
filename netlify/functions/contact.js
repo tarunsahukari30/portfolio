@@ -1,83 +1,49 @@
-const { MongoClient } = require('mongodb');
+// netlify/functions/contact.js
+const { MongoClient } = require("mongodb");
 
-exports.handler = async (event, context) => {
-  // Set CORS headers
+let client; // cache the client between invocations
+
+exports.handler = async (event) => {
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   };
 
-  // Handle preflight OPTIONS request
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
   }
 
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
   try {
-    // Parse the request body
-    const { name, email, message } = JSON.parse(event.body);
-
-    // Validation
-    if (!name || !email || !message) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'All fields are required' }),
-      };
+    const { name, email, subject, message } = JSON.parse(event.body || "{}");
+    if (!name || !email || !subject || !message) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "All fields are required" }) };
     }
 
-    // MongoDB connection
-    const client = new MongoClient(process.env.MONGODB_URI);
-    
-    await client.connect();
-    
-    const db = client.db('portfolio'); // Your database name
-    const collection = db.collection('contacts'); // Your collection name
-    
-    // Insert the contact data
-    const result = await collection.insertOne({
-      name,
-      email,
-      message,
-      timestamp: new Date(),
-      ip: event.headers['x-forwarded-for'] || event.headers['x-real-ip'] || 'unknown'
-    });
+    if (!client) {
+      client = new MongoClient(process.env.MONGODB_URI);
+      await client.connect();
+    }
 
-    await client.close();
+    const db = client.db("portfolio");          // database name
+    const collection = db.collection("contacts"); // collection name
+
+    const result = await collection.insertOne({
+      name, email, subject, message,
+      timestamp: new Date(),
+    });
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Message sent successfully!',
-        id: result.insertedId 
-      }),
+      body: JSON.stringify({ success: true, message: "Message sent successfully!", id: result.insertedId }),
     };
-
-  } catch (error) {
-    console.error('Error:', error);
-    
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message 
-      }),
-    };
+  } catch (err) {
+    console.error("Function error:", err);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Internal server error" }) };
   }
 };

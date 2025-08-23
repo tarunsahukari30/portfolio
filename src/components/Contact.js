@@ -1,89 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-const ContactForm = () => {
+const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: ''
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState('');
+
+  const [loading, setLoading] = useState(false);
+
+  // Use Netlify redirect in production, fallback to localhost in dev
+  const API_URL =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:8888/.netlify/functions" // Netlify dev server
+      : ""; // in production, use relative path
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitMessage('');
+    setLoading(true);
 
     try {
-      const response = await fetch('/.netlify/functions/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+      const res = await fetch(`${API_URL}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
-        setSubmitMessage('Thank you! Your message has been sent successfully.');
-        setFormData({ name: '', email: '', message: '' });
+      if (res.ok) {
+        alert(data.message || "Message sent successfully!");
+        setFormData({ name: "", email: "", subject: "", message: "" });
       } else {
-        setSubmitMessage(result.error || 'Error sending message. Please try again.');
+        alert(data.error || "Something went wrong!");
       }
     } catch (error) {
-      console.error('Error:', error);
-      setSubmitMessage('Network error. Please check your connection and try again.');
+      console.error("❌ Network/Fetch Error:", error);
+      alert("Server error. Please try again later.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <section id="contact" className="contact-section">
-      <div className="container">
-        <h2 className="section-title">Contact Me</h2>
-        <div className="contact-content">
-          
-          {/* Contact Info */}
-          <div className="contact-info">
-            <h3>Get In Touch</h3>
-            <p>Feel free to reach out for opportunities or just to say hello!</p>
-            
-            <div className="contact-details">
-              <div className="contact-item">
-                <span className="contact-icon">📧</span>
-                <span>your-email@example.com</span>
-              </div>
-              <div className="contact-item">
-                <span className="contact-icon">📱</span>
-                <span>+91 your-phone-number</span>
-              </div>
-              <div className="contact-item">
-                <span className="contact-icon">📍</span>
-                <span>Yanamalakuduru, Andhra Pradesh</span>
-              </div>
-            </div>
+    <section id="contact">
+      <div className="contact-container">
+        <div className="contact-form-wrapper">
+          <div className="contact-header">
+            <p className="contact-subtitle">Get in Touch</p>
+            <h1 className="contact-title">Contact Me</h1>
           </div>
 
-          {/* Contact Form */}
-          <form onSubmit={handleSubmit} className="contact-form">
+          <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <input
                 type="text"
                 name="name"
-                placeholder="Your Name"
+                className="form-input"
+                placeholder="Name"
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="form-input"
               />
             </div>
 
@@ -91,45 +76,51 @@ const ContactForm = () => {
               <input
                 type="email"
                 name="email"
-                placeholder="Your Email"
+                className="form-input"
+                placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
                 required
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                type="text"
+                name="subject"
                 className="form-input"
+                placeholder="Subject"
+                value={formData.subject}
+                onChange={handleChange}
+                required
               />
             </div>
 
             <div className="form-group">
               <textarea
                 name="message"
-                placeholder="Your Message"
-                rows="5"
+                className="form-textarea"
+                placeholder="Message"
                 value={formData.message}
                 onChange={handleChange}
                 required
-                className="form-input"
-              ></textarea>
+              />
             </div>
 
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="submit-btn"
-            >
-              {isSubmitting ? 'Sending...' : 'Send Message'}
-            </button>
-
-            {submitMessage && (
-              <p className={`submit-message ${submitMessage.includes('successfully') ? 'success' : 'error'}`}>
-                {submitMessage}
-              </p>
-            )}
+            <div className="submit-button-wrapper">
+              <button
+                type="submit"
+                className="submit-button"
+                disabled={loading}
+              >
+                {loading ? "Sending..." : "Send Message"}
+              </button>
+            </div>
           </form>
-
         </div>
       </div>
     </section>
   );
 };
 
-export default ContactForm;
+export default Contact;

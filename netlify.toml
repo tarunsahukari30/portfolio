@@ -1,12 +1,16 @@
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = "build"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
 
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["mongodb"]
+
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to   = "/.netlify/functions/:splat"
   status = 200
