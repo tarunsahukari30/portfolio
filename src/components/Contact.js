@@ -10,11 +10,11 @@ const Contact = () => {
 
   const [loading, setLoading] = useState(false);
 
-  // Use Netlify redirect in production, fallback to localhost in dev
+  // ✅ API endpoint (works in dev + Netlify)
   const API_URL =
     process.env.NODE_ENV === "development"
-      ? "http://localhost:8888/.netlify/functions" // Netlify dev server
-      : ""; // in production, use relative path
+      ? "http://localhost:8888/.netlify/functions/contact" // local Netlify dev
+      : "/.netlify/functions/contact"; // production (Netlify)
 
   const handleChange = (e) => {
     setFormData({
@@ -28,7 +28,7 @@ const Contact = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/contact`, {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
